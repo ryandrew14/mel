@@ -1,25 +1,20 @@
-# mel
+# MEL
 Music Embedding Language for racket. #lang mel
 
-### Grammar Rules
-
-```racket
-; Program 
-; p = (tempo x) (sequence x e) ... s
-
-; Expressions
-; e = x
-;   | N
-;   | (e from e to e)
-;   | (e at e)
-;   | (play x)
-;   | (rest e)
-
-; Stream
-; s = (stream [e] ...)
-
+### A basic use example
 ```
+#lang mel
 
-### Scoping Rules
+(tempo 80)
 
-- (sequence a e) binds a for the rest of the program (not in e)
+(sequence a
+  [play kick #:repeat: 8]
+  [play clap #:rate 0.5])
+
+(sequence b
+  [hihat #:stretch 2])
+
+(song
+  [a from 0 to 20]
+  [b from 10 to 20])
+```
