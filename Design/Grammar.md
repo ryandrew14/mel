@@ -4,11 +4,13 @@
 Program
      p       = (tempo x) (sequence x [e] ...) ... s
 
+Number
+     n       = Number
+     
 Expressions
      e       = x
-             | N
              | (play e play-option ...)
-             | (rest N)
+             | (rest n)
              | kick
              | snare
              | crash
@@ -19,14 +21,14 @@ Song
      s       = (song song-expr ...)
 
 Play-option
-play-option  = #:repeat number
-             | #:stretch number
-             | #:rate number
-             | #:amp number
-             | #:attack number
-             | #:release number
-             | #:sustain number
-             | #:pan number
+play-option  = #:repeat n
+             | #:stretch n
+             | #:rate n
+             | #:amp n
+             | #:attack n
+             | #:release n
+             | #:sustain n
+             | #:pan n
 
 Song-Expression
 song-expr    = [e from e to e]
