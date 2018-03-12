@@ -9,9 +9,11 @@ Number
      
 Expressions
      e       = x
-             | (play e play-option ...)
+             | (play snd play-option ...)
              | (rest n)
-             | kick
+
+Sound
+    snd      = kick
              | snare
              | crash
              | hihat

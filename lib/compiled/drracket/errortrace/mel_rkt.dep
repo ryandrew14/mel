@@ -1,1 +1,0 @@
-("6.11" ("4ed8b67c1f5550cce4d0c818a505e2e5e5d10a88" . "1e1cfd62c9f014718fe1be6bf518119b5910bf8a") (collects #"errortrace" #"errortrace-key.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"rsound" #"main.rkt") (collects #"syntax" #"parse.rkt") (indirect collects #"syntax" #"parse" #"private" #"parse-aux.rkt"))
