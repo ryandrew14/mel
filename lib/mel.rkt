@@ -32,8 +32,8 @@
 ;              | #:pan n
 
 ; Song-Expression
-; song-expr    = [e from e to e]
-;              | [e at e]
+; song-expr    = [x from n to n]
+;              | [x at n]
 
 (require (for-syntax syntax/parse)
          rsound)
@@ -41,7 +41,10 @@
 (provide
  ; Override module begin
  (rename-out [mel-module-begin #%module-begin])
-
+ 
+ tempo
+ sequence
+ song
  ; Rsound sounds
  kick snare (rename-out
              [crash-cymbal crash]
@@ -49,8 +52,16 @@
              [clap-1 clap]) 
  
  ; Racket basics
- #%app #%datum #%top-interaction require)
+ #%datum #%top-interaction require)
 
+;; Tempo declaration (will be set! by tempo statement)
+(define current-tempo 0)
+
+;; Value of 1 beat
+(define beat-length 0)
+
+;; Song declaration (will be added to by song statement)
+(define final-song (make-pstream))
 
 (define-syntax mel-module-begin
   (syntax-parser
@@ -60,17 +71,52 @@
      #'(#%module-begin
         (tempo t)
         (sequence x s-exp ...) ...
-        (song song-exp ...))]))
+        (song song-exp ...))]
+    [(_) (error "Program does not follow grammar: (tempo x) (sequence x [seq-expr] ...) ... s")]))
 
+;; EFFECT sets current-tempo to t
 (define-syntax tempo
   (syntax-parser
-    [(_ t:nat) #'t]))
+    [(_ t:nat) #'(update-tempo t)]))
 
 (define-syntax sequence
   (syntax-parser
     [(_ x:id seq-exp ...)
-     #:with val (assemble-sequence #'seq-exp)
-     #'(define x (assemble val))]))
+     #:with val (assemble-sequence (syntax->list #'(seq-exp ...)))
+     #'(begin (displayln val)
+              (define x (assemble val)))]))
 
-(define-for-syntax (assemble-sequence
-  (
+;; [Listof seq-expr] -> [Listof [Pair rsound N]]
+(define-for-syntax (assemble-sequence exp)
+  (displayln exp)
+  (foldl get-seq-info '() exp))
+
+;; seq-expr [Listof [Pair rsound N]] -> [Listof [Pair rsound N]]
+(define-for-syntax (get-seq-info e lop)
+  (syntax-parse e
+    #;[(~datum rest)
+     #`(cons (list (silence beat-length) (* beat-length (length #,lop))) #,lop)]
+    [((~datum play) rs)
+     #`(cons (list kick 10000) #,lop)]))
+
+(define-syntax song
+  (syntax-parser
+    [(_ song-expr ...)
+     #'(begin (add-to-queue song-expr) ...)]))
+
+(define-syntax add-to-queue
+  (syntax-parser
+    [(_ [rs:id (~datum at) n:nat])
+     #'(pstream-queue final-song rs (beat->frame n))]))
+
+;; Runtime tempo helpers:
+
+;; Converts beat number to frame value
+(define (beat->frame bn)
+  (displayln beat-length)
+  (* bn beat-length))
+
+;; Update the tempo and beat length
+(define (update-tempo t)
+  (set! current-tempo t)
+  (set! beat-length (* (/ (default-sample-rate) current-tempo) 60)))
