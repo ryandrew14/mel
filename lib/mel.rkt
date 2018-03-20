@@ -103,7 +103,7 @@
 (define-for-syntax (get-seq-info e lop)
   (syntax-parse e
     [((~datum rest))
-     #`(cons (list (silence beat-length) (beat->frame (length #,lop))) #,lop)]
+     #`(cons (list (silence (round beat-length)) (beat->frame (length #,lop))) #,lop)]
     [((~datum play) rs)
      #`(cons (list rs (beat->frame (length #,lop))) #,lop)]))
 
