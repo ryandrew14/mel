@@ -46,13 +46,23 @@
  sequence
  song
  ; Rsound sounds
- kick snare (rename-out
-             [crash-cymbal crash]
-             [o-hi-hat hihat]
-             [clap-1 clap]) 
+ (rename-out
+  [s-kick kick]
+  [s-snare snare]
+  [s-bassdrum bassdrum]
+  [s-crash crash]
+  [s-hihat hihat]
+  [clap-1 clap]) 
  
  ; Racket basics
  #%datum #%top-interaction require)
+
+;; Scaled Sounds
+(define s-kick (rs-scale .5 kick))
+(define s-snare (rs-scale .5 snare))
+(define s-bassdrum (rs-scale .7 bassdrum))
+(define s-crash (rs-scale .5 crash-cymbal))
+(define s-hihat (rs-scale .5 o-hi-hat))
 
 ;; Tempo declaration (will be set! by tempo statement)
 (define current-tempo 0)
@@ -83,21 +93,19 @@
   (syntax-parser
     [(_ x:id seq-exp ...)
      #:with val (assemble-sequence (syntax->list #'(seq-exp ...)))
-     #'(begin (displayln val)
-              (define x (assemble val)))]))
+     #'(define x (assemble val))]))
 
 ;; [Listof seq-expr] -> [Listof [Pair rsound N]]
 (define-for-syntax (assemble-sequence exp)
-  (displayln exp)
-  (foldl get-seq-info '() exp))
+  (foldl get-seq-info #''() exp))
 
 ;; seq-expr [Listof [Pair rsound N]] -> [Listof [Pair rsound N]]
 (define-for-syntax (get-seq-info e lop)
   (syntax-parse e
-    #;[(~datum rest)
-     #`(cons (list (silence beat-length) (* beat-length (length #,lop))) #,lop)]
+    [((~datum rest))
+     #`(cons (list (silence beat-length) (beat->frame (length #,lop))) #,lop)]
     [((~datum play) rs)
-     #`(cons (list kick 10000) #,lop)]))
+     #`(cons (list rs (beat->frame (length #,lop))) #,lop)]))
 
 (define-syntax song
   (syntax-parser
@@ -113,8 +121,7 @@
 
 ;; Converts beat number to frame value
 (define (beat->frame bn)
-  (displayln beat-length)
-  (* bn beat-length))
+  (round (* bn beat-length)))
 
 ;; Update the tempo and beat length
 (define (update-tempo t)
