@@ -12,3 +12,6 @@
     - sequences working
     - song "at" clause working
     - percussion sounds
+
+- Sequences not top level forms
+- Chords

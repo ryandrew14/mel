@@ -8,11 +8,11 @@ Music Embedding Language for racket. #lang mel
 (tempo 80)
 
 (sequence a
-  [play kick #:repeat: 8]
-  [play clap #:rate 0.5])
+  [play kick #:repeat 8]
+  [play clap #:rate 2])
 
 (sequence b
-  [hihat #:stretch 2])
+  [play hihat #:stretch 2])
 
 (song
   [a from 0 to 20]
