@@ -51,12 +51,15 @@
 (define (next-beat-frame)
   (beat->frame (add1 (current-beat))))
 
+
+(define ts (rs-scale .5 bassdrum))
+
 ; Song -> (void)
 ; play-song runs indefinitely, playing the specified song.
 (define (play-song song)
-    (play-at-beat bassdrum (+ 2 (current-beat)))
-    (play-at-beat bassdrum (+ 3 (current-beat)))
-    (play-at-beat bassdrum (+ 4 (current-beat)))
+    (play-at-beat ts (+ 3 (current-beat)))
+    (play-at-beat ts (+ 4 (current-beat)))
+    (play-at-beat ts (+ 5 (current-beat)))
     (sleep (/ (- (beat->frame (+ 3 (current-beat))) (pstream-current-frame stream)) (default-sample-rate)))
     (play-song song))
 (play-song 's)
