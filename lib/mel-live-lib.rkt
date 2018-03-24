@@ -17,7 +17,7 @@
 
     ; N [Pair Sound [Listof N]] ... -> Loop
     ; Creates a loop object from a list of sounds and which beats to play them on.
-    [make-loop (->* (integer?) () #:rest (cons/c rsound? (listof integer?)) loop?)])
+    [make-loop (->* (integer?) () #:rest (listof (cons/c rsound? (listof (listof integer?)))) loop?)])
 
   (rename-out
     [s-kick kick]
