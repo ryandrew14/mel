@@ -27,7 +27,7 @@
     [s-crash crash]
     [s-hihat hihat]))
 
-;; Data Definitions
+; Data Definitions
 
 ; A Song is a [Listof Loop]
 ; A Loop is a [N -> [Listof Sound]]
@@ -120,6 +120,7 @@
 
 ; N [Pair Sound [Listof N]] ... -> Loop
 ; Creates a loop object from a list of sounds and which beats to play them on.
+#;
 (module+ test
   (define simple (make-loop 4 
                             (list s-bassdrum '(1 2 3)) 
