@@ -26,7 +26,7 @@
     [s-crash crash]
     [s-hihat hihat]))
 
-;; Data Definitions
+; Data Definitions
 
 ; A Song is a [Listof Loop]
 ; A Loop is a [N -> [Listof Sound]]
@@ -172,7 +172,7 @@
           r))
       '()
       sounds)))
-
+#;
 (play-song (list (make-loop 4 
                             (list s-hihat '(1 2 3 4))
                             (list s-snare '(1 2))

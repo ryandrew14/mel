@@ -1,127 +1,90 @@
 #lang racket
-
-; Program
-;      p       = (tempo x) (sequence x [seq-expr] ...) ... s
-
-; Number
-;      n       = Number
-     
-; Expressions
-;      e       = x
-;              | kick
-;              | snare
-;              | crash
-;              | hihat
-;              | clap
-
-; Song
-;      s       = (song song-expr ...)
-
-; Sequence-Expression
-; seq-expr     = (play e play-option ...)
-;              | (rest n)
-
-; Play-option
-; play-option  = #:repeat n
-;              | #:stretch n
-;              | #:rate n
-;              | #:amp n
-;              | #:attack n
-;              | #:release n
-;              | #:sustain n
-;              | #:pan n
-
-; Song-Expression
-; song-expr    = [x from n to n]
-;              | [x at n]
+;;   Program      = (tempo N) top-expr ...
+;;
+;;   top-expr     = (play expr)
+;;                | (define id expr)
+;;
+;;    expr        = N
+;;                | (list N ...)
+;;                | loop-expr
+;;                | id
+;;
+;;  loop-expr     = (loop N sound-expr ...)
+;;
+;; sound-expr     = [sound (list N ...)]
+;;
+;;  sound         = hihat
+;;                | kick
+;;                | snare
+;;                | bassdrum
+;;                | crash
 
 (require (for-syntax syntax/parse)
-         rsound)
+         
+	 "mel-live-lib.rkt")
 
 (provide
  ; Override module begin
  (rename-out [mel-module-begin #%module-begin])
  
- tempo
- sequence
- song
- ; Rsound sounds
- (rename-out
-  [s-kick kick]
-  [s-snare snare]
-  [s-bassdrum bassdrum]
-  [s-crash crash]
-  [s-hihat hihat]
-  [clap-1 clap]) 
- 
+
  ; Racket basics
- define quote #%datum #%top-interaction require)
+ define quote #%datum #%top-interaction require play loop
 
-;; Scaled Sounds
-(define s-kick (rs-scale .5 kick))
-(define s-snare (rs-scale .5 snare))
-(define s-bassdrum (rs-scale .7 bassdrum))
-(define s-crash (rs-scale .5 crash-cymbal))
-(define s-hihat (rs-scale .5 o-hi-hat))
+ ; Library things
+ bassdrum hihat kick)
 
-;; Tempo declaration (will be set! by tempo statement)
-(define current-tempo 0)
-
-;; Value of 1 beat
-(define beat-length 0)
-
-;; Song declaration (will be added to by song statement)
-(define final-song (make-pstream))
+;; The song
+(define cursong '())
 
 (define-syntax mel-module-begin
   (syntax-parser
     [(_ ((~datum tempo) t)
         top-expr ...)
      #'(#%module-begin
-        (tempo t)
-        top-expr ...)]
+        (update-tempo t)
+        top-expr ...
+        (displayln cursong)
+        (play-song cursong))]
     [(_) (error "Program does not follow grammar: (tempo x) (sequence x [seq-expr] ...) ... s")]))
 
-;; EFFECT sets current-tempo to t
-(define-syntax tempo
+;; Syntax -> Void
+;; EFFECT plays this sound at a given time
+(define-syntax play
   (syntax-parser
-    [(_ t:nat) #'(update-tempo t)]))
+    [(_ n:nat)
+     (error "invalid syntax - play must take a loop-expression")]
+    [(_ (list l:nat ...))
+     (error "invalid syntax - play must take a loop-expression")]
+    [(_ loop-expr)
+     #:with fin-loop #'loop-expr
+     #'(update-song fin-loop)]))
 
-(define-syntax sequence
+;; Syntax -> [N -> [Listof Sound]]
+;; given a loop-expr, uses the library function make-loop to format the information
+;; so that it can be used by the library function play-song
+(define-syntax loop
   (syntax-parser
-    [(_ x:id seq-exp ...)
-     #:with val (assemble-sequence (syntax->list #'(seq-exp ...)))
-     #'(define x (assemble val))]))
+    [(_ n:nat [sound-name lon] ...)
+     #'(make-loop n (list sound-name lon) ...)]))
 
-;; [Listof seq-expr] -> [Listof [Pair rsound N]]
-(define-for-syntax (assemble-sequence exp)
-  (foldl get-seq-info #''() exp))
-
-;; seq-expr [Listof [Pair rsound N]] -> [Listof [Pair rsound N]]
-(define-for-syntax (get-seq-info e lop)
-  (syntax-parse e
-    [((~datum rest))
-     #`(cons (list (silence (round beat-length)) (beat->frame (length #,lop))) #,lop)]
-    [((~datum play) rs)
-     #`(cons (list rs (beat->frame (length #,lop))) #,lop)]))
-
-(define-syntax song
+;; Restrict available datatypes to numbers, lists of numbers, and identifiers
+(define-syntax mel-#%datum
   (syntax-parser
-    [(_ song-expr ...)
-     #'(begin (add-to-queue song-expr) ...)]))
+    [(_ . x:nat)
+     #'(#%datum . x)]
+    [(_ x:id)
+     #'(#%datum x)]
+    [(_ #`(list #,x:nat ...))
+     #'(#%datum (list x ...))]))
 
-(define-syntax add-to-queue
-  (syntax-parser
-    [(_ [rs:id (~datum at) n:nat])
-     #'(pstream-queue final-song rs (beat->frame n))]))
+(define (update-song loop)
+  (set! cursong (cons loop cursong)))
 
-;; Runtime tempo helpers:
 
-;; Converts beat number to frame value
-(define (beat->frame bn)
-  (round (* bn beat-length)))
 
-;; Update the tempo and beat length
-(define (update-tempo t)
-  (set! current-tempo t)
-  (set! beat-length (* (/ (default-sample-rate) current-tempo) 60)))
+
+
+
+
+
