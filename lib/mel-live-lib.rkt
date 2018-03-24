@@ -15,9 +15,13 @@
     ; EFFECT plays sounds FOREVER
     [play-song (-> song? void?)]
 
-    ; N [Pair Sound [Listof N]] ... -> Loop
-    ; Creates a loop object from a list of sounds and which beats to play them on.
-    [make-loop (->* (integer?) () #:rest (cons/c rsound? (listof integer?)) loop?)])
+    ; N Player -> Player
+    ; Loops a player using the specified loop length.
+    [loop (-> integer? player? player?)]
+
+    ; Sound [Listof N] -> Player
+    ; Creates a player object given a sound when to play the sound.
+    [make-player (-> rsound? (listof integer?) player?)])
 
   (rename-out
     [s-kick kick]
@@ -28,8 +32,8 @@
 
 ; Data Definitions
 
-; A Song is a [Listof Loop]
-; A Loop is a [N -> [Listof Sound]]
+; A Song is a [Listof Player]
+; A Player is a [N -> [Listof Sound]]
 ; A Sound is one of:
 ;  - hihat
 ;  - kick
@@ -62,11 +66,11 @@
 ; Any -> Boolean?
 ; Is this a song?
 (define (song? s)
-  (andmap loop?  s))
+  (andmap player?  s))
 
 ; Any -> Boolean?
-; Is this a loop?
-(define (loop? a)
+; Is this a player?
+(define (player? a)
   (and (procedure? a) (= 1 (procedure-arity a))))
 
 ; N -> (void)
@@ -151,29 +155,36 @@
   (loop))
 
 
-; N [Pair Sound [Listof N]] ... -> Loop
-; Creates a loop object from a list of sounds and which beats to play them on.
+; Sound [Listof N] -> Player
+; Creates a player object given a sound when to play the sound.
 (module+ test
-  (define simple (make-loop 4 
-                            (list s-bassdrum '(1 2 3)) 
-                            (list s-crash '(2 3))))
+  (define p (make-player s-bassdrum '(1 3)))
+  (check-equal? (p 1) (list s-bassdrum))
+  (check-equal? (p 2) '())
+  (check-equal? (p 3) (list s-bassdrum))
+  (check-equal? (p 8) '()))
+(define (make-player sound play-times)
+  (lambda (beat)
+    (define should-play (member beat play-times))
+    (if should-play
+      (list sound)
+      '())))
+
+
+; N Player -> Player
+; Loops a player using the specified loop length.
+(module+ test
+  (define simple (loop 4 p))
   (check-equal? (simple 1) (list s-bassdrum))
-  (check-equal? (simple 2) (list s-bassdrum s-crash))
-  (check-equal? (simple 3) (list s-bassdrum s-crash))
-  (check-equal? (simple 4) '()))
-(define (make-loop loop-len . sounds)
+  (check-equal? (simple 2) '())
+  (check-equal? (simple 53) (list s-bassdrum))
+  (check-equal? (simple 24) '()))
+(define (loop loop-len player)
   (lambda (n)
     (define mod-beat (add1 (modulo (sub1 n) loop-len)))
-    (foldr
-      (lambda (sound r)
-        (define should-play (member mod-beat (second sound)))
-        (if should-play
-          (cons (first sound) r)
-          r))
-      '()
-      sounds)))
+    (player mod-beat)))
+
 #;
-(play-song (list (make-loop 4 
-                            (list s-hihat '(1 2 3 4))
-                            (list s-snare '(1 2))
-                            (list s-bassdrum '(1 2)))))
+(play-song (list (loop 4 (make-player s-hihat '(1 2 3 4)))
+                 (loop 4 (make-player s-snare '(1 2)))
+                 (loop 4 (make-player s-bassdrum '(1 2)))))
