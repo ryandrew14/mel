@@ -19,17 +19,25 @@
 ;;                | bassdrum
 ;;                | crash
 
+;; TODO
+;; make quote raise a better exception
+;; add error messages to #%datum
+
 (require (for-syntax syntax/parse)
          
 	 "mel-live-lib.rkt")
 
 (provide
  ; Override module begin
- (rename-out [mel-module-begin #%module-begin])
- 
+ (rename-out [mel-module-begin #%module-begin]
+             [mel-datum #%datum]
+             [mel-quote quote])
 
  ; Racket basics
- define quote #%datum #%top-interaction require play loop
+ define require 
+
+ ; Macros
+ play loop
 
  ; Library things
  bassdrum hihat kick)
@@ -45,20 +53,21 @@
         (update-tempo t)
         top-expr ...
         (displayln cursong)
-        (play-song cursong))]
-    [(_) (error "Program does not follow grammar: (tempo x) (sequence x [seq-expr] ...) ... s")]))
+        (play-song cursong))]))
 
 ;; Syntax -> Void
 ;; EFFECT plays this sound at a given time
-(define-syntax play
-  (syntax-parser
+(define-syntax (play stx)
+  (if (equal? (syntax-local-context) 'module)
+  (syntax-parse stx
     [(_ n:nat)
      (error "invalid syntax - play must take a loop-expression")]
     [(_ (list l:nat ...))
      (error "invalid syntax - play must take a loop-expression")]
     [(_ loop-expr)
      #:with fin-loop #'loop-expr
-     #'(update-song fin-loop)]))
+     #'(update-song fin-loop)])
+  #'(error "Play is a top leve form!")))
 
 ;; Syntax -> [N -> [Listof Sound]]
 ;; given a loop-expr, uses the library function make-loop to format the information
@@ -69,7 +78,7 @@
      #'(make-loop n (list sound-name lon) ...)]))
 
 ;; Restrict available datatypes to numbers, lists of numbers, and identifiers
-(define-syntax mel-#%datum
+(define-syntax mel-datum
   (syntax-parser
     [(_ . x:nat)
      #'(#%datum . x)]
@@ -78,13 +87,15 @@
     [(_ #`(list #,x:nat ...))
      #'(#%datum (list x ...))]))
 
+;; Mel's quote can only make lists of numbers
+(define-syntax mel-quote
+  (syntax-parser
+    [(_ (n:number ...))
+     #'(quote (n ...))]))
+
+
+;; Runtime helper to create the song
 (define (update-song loop)
   (set! cursong (cons loop cursong)))
-
-
-
-
-
-
 
 

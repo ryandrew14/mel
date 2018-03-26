@@ -1,15 +1,14 @@
 #lang s-exp "../lib/mel-live.rkt"
 ;#lang racket
 
-(tempo 80)
+(tempo 460)
 
-(define dope '(1 3 4))
+(define dope '(0 1))
 
 (define loop1
   (loop 4
         [bassdrum dope]))
-
-
+(define aaa '(1 1))
 ;; Play a looping 4-beat measure which plays a hi-hat sound
 ;; on beats 2 and 4
 (play (loop 4 
