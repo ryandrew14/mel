@@ -1,6 +1,7 @@
 #lang racket
 
 (require rsound)
+(require rsound/piano-tones)
 
 (module+ test
   (require rackunit))
@@ -89,8 +90,7 @@
     (begin
       (pstream-queue stream sound (beat->frame beat-num))
       (void))
-    (error "Cannot play sounds at beat-num 0")))
-
+    (error "Cannot play sounds at beat-num 0"))) 
 
 ; Loop N -> (void)
 ; Queues the sounds of a loop at a specified beat number onto the stream.
@@ -129,10 +129,10 @@
   (beat->frame (add1 (current-beat))))
 
 ; QUEUE-SIZE defines how many beats to queue at once.
-(define QUEUE-SIZE 5)
+(define QUEUE-SIZE 4)
 
 ; QUEUE-AHEAD defines how far in advance to queue sounds, in beats.
-(define QUEUE-AHEAD 3)
+(define QUEUE-AHEAD 5)
 
 ; Song N -> (void)
 ; Queues all sounds in a song for a given beat.
@@ -144,15 +144,15 @@
 ; play-song runs indefinitely, playing the specified song.
 ; EFFECT plays sounds FOREVER
 (define (play-song song)
-  (define (loop)
-    (for ([i QUEUE-SIZE])
-      (play-song-at-beat song (+ QUEUE-AHEAD i (current-beat))))
-    (sleep (/ (- (beat->frame (+ QUEUE-SIZE (current-beat))) (pstream-current-frame stream)) (default-sample-rate)))
-    (loop))
   (set! stream (make-pstream))
   (for ([i (in-range 1 (add1 QUEUE-AHEAD))])
     (play-song-at-beat song i))
-  (loop))
+  (let loop ([last-queued QUEUE-AHEAD])
+    (define queue-to (+ (current-beat) QUEUE-SIZE QUEUE-AHEAD))
+    (for ([i (in-range (+ 1 last-queued) (+ 1 queue-to))])
+      (play-song-at-beat song i))
+    (sleep (/ (- (beat->frame (+ QUEUE-SIZE (current-beat))) (pstream-current-frame stream)) (default-sample-rate)))
+    (loop queue-to)))
 
 
 ; Sound [Listof N] -> Player
@@ -170,6 +170,15 @@
       (list sound)
       '())))
 
+; [Listof N] [Listof N] -> Player
+; Creates a player that plays piano with different tones.
+(define (make-piano-player play-times tones)
+  (define tone-times (map list play-times tones))
+  (lambda (beat)
+    (define tone (assoc beat tone-times))
+    (if tone
+      (list (piano-tone (second tone)))
+      '())))
 
 ; N Player -> Player
 ; Loops a player using the specified loop length.
@@ -184,7 +193,14 @@
     (define mod-beat (add1 (modulo (sub1 n) loop-len)))
     (player mod-beat)))
 
+(define (mirror loop-len player)
+  (lambda (n)
+    (define mirror-beat (- loop-len n))
+    (player mirror-beat)))
+
+
 #;
 (play-song (list (loop 4 (make-player s-hihat '(1 2 3 4)))
                  (loop 4 (make-player s-snare '(1 2)))
                  (loop 4 (make-player s-bassdrum '(1 2)))))
+(play-song (list (make-piano-player '(1 2 3 4 5 6 7 8) '(60 62 64 65 67 69 71 72))))
