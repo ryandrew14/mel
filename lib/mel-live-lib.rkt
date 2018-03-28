@@ -7,29 +7,46 @@
   (require rackunit))
 
 (provide
- (contract-out
-  ; Update the tempo and beat length
-  ; EFFECT sets the tempo and beat length.
-  [update-tempo (-> integer? void?)]
+  (contract-out
+    ; Update the tempo and beat length
+    ; EFFECT sets the tempo and beat length.
+    [update-tempo (-> integer? void?)]
 
-  ; play-song runs indefinitely, playing the specified song.
-  ; EFFECT plays notes FOREVER
-  [play-song (-> song? void?)]
+    ; play-song runs indefinitely, playing the specified song.
+    ; EFFECT plays notes FOREVER
+    [play-song (-> song? void?)]
 
-  ; N Player -> Player
-  ; Loops a player using the specified loop length.
-  [loop (-> integer? player? player?)]
+    ; Instrument [Listof N] -> Player
+    ; Creates a player object given an instrument and when to play the instrument.
+    [player-from-instrument (-> instrument? (listof integer?) player?)]
 
-  ; Instrument [Listof N] -> Player
-  ; Creates a player object given a note when to play the note.
-  [make-player (-> instrument? (listof integer?) player?)])
+    ; N Player -> Player
+    ; Loops a player using the specified loop length.
+    [loop (-> integer? player? player?)]
+    
+    ; Key [Listof Pitch] Player -> Player
+    ; Sets the pitches of the player.
+    [set-pitches (-> (listof integer?) (listof integer?) player? player?)]
 
- (rename-out
-  [s-kick kick]
-  [s-snare snare]
-  [s-bassdrum bassdrum]
-  [s-crash crash]
-  [s-hihat hihat]))
+    ; Player -> Player
+    ; Sets reverb to the player.
+    [set-reverb (-> player? player?)]
+
+    ; Number Player -> Player
+    ; Sets the amplitude of the player.
+    [set-amp (-> number? player? player?)]
+
+    ; [Listof Number] Player -> Player
+    ; Sets the amplitude of each note of the player 
+    [set-amps (-> (listof number?) player? player?)])
+
+  (rename-out
+    [s-kick kick]
+    [s-snare snare]
+    [s-bassdrum bassdrum]
+    [s-crash crash]
+    [s-hihat hihat])
+  synth)
 
 ; Data Definitions
 
@@ -111,8 +128,12 @@
 ; Note -> Rsound
 ; Turns the note struct into an rsound
 (module+ test
-  (check-equal? (note->rs (note s-bassdrum 1 (list identity)))
-                (s-bassdrum 1)))
+  (define a-bassdrum (note s-bassdrum 1 (list identity)))
+  (define b-bassdrum (note s-bassdrum 1 (list rs-reverb)))
+  (check-equal? (note->rs a-bassdrum)
+                (s-bassdrum 1))
+  (check-equal? (note->rs b-bassdrum)
+                (rs-reverb (s-bassdrum 1))))
 (define (note->rs s)
   ((apply compose (note-effects s))
    ((note-instrument s) (note-pitch s))))
@@ -191,6 +212,8 @@
     (sleep (/ (- (beat->frame (+ QUEUE-SIZE (current-beat))) (pstream-current-frame stream)) (default-sample-rate)))
     (loop queue-to)))
 
+;; Define provided player constructor and modifiers
+
 ; Instrument [Listof N] -> Player
 ; Creates a player object given a note when to play the note.
 (module+ test
@@ -208,6 +231,22 @@
          #f))
    play-times))
 
+; N Player -> Player
+; Loops a player using the specified loop length.
+(module+ test
+  (define simple (loop 4 p))
+  (check-equal? (note->rs ((player-func simple) 1)) (s-bassdrum 0))
+  (check-equal? ((player-func simple) 2) #f)
+  (check-equal? (note->rs ((player-func simple) 53)) (s-bassdrum 0))
+  (check-equal? ((player-func simple) 24) #f))
+(define (loop loop-len p)
+  (struct-copy 
+    player 
+    p
+    [func (lambda (n)
+            (define mod-beat (add1 (modulo (sub1 n) loop-len)))
+            ((player-func p) mod-beat))]))
+
 ; [Listof X] [Listof Beat] Beat -> [Maybe X]
 ; Returns the X in the list of X corresponding to the given Beat in the list of Beats.
 (module+ test
@@ -223,7 +262,7 @@
 
 ; Key [Listof Pitch] Player -> Player
 ; Sets the pitches of the player
-(define (set-pitch key pitches p)
+(define (set-pitches key pitches p)
   (cond
     [(empty? key)
      (player
@@ -262,21 +301,6 @@
      (cond
     [(< p-adjusted 7) (list-ref key p-adjusted)]
     [(>= p-adjusted 7) (+ 12 (pitch-in-key key (- p 7)))])]))
-
-; N Player -> Player
-; Loops a player using the specified loop length.
-(module+ test
-  (define simple (loop 4 p))
-  (check-equal? (note->rs ((player-func simple) 1)) (s-bassdrum 0))
-  (check-equal? ((player-func simple) 2) #f)
-  (check-equal? (note->rs ((player-func simple) 53)) (s-bassdrum 0))
-  (check-equal? ((player-func simple) 24) #f))
-(define (loop loop-len p)
-  (player
-   (lambda (n)
-     (define mod-beat (add1 (modulo (sub1 n) loop-len)))
-     ((player-func p) mod-beat))
-   (player-beats p)))
 
 ; Symbol Pitch -> Key
 ; Makes a key, given the midi note to start on
@@ -318,11 +342,78 @@
 (define A#min (make-key 'minor 70))
 (define Bmin (make-key 'minor 71))
 
+; Player -> Player
+; Adds reverb to the player.
+(define (set-reverb p)
+  (struct-copy 
+    player 
+    p
+    [func (lambda (b)
+            (define l-note ((player-func p) b))
+            (if l-note
+              (add-effect rs-reverb l-note)
+              l-note))]))
+
+; Number Player -> Player
+; Sets the amplitude of the player 
+; Vol should be between 0 and 1.
+(define (set-amp vol p)
+  (struct-copy
+    player
+    p
+    [func (lambda (b)
+            (define l-note ((player-func p) b))
+            (if l-note
+              (add-effect (mk-amp-effect vol) l-note)
+              l-note))]))
+
+; [Listof Number] Player -> Player
+; Sets the amplitude of each note of the player 
+; Vol should be between 0 and 1.
+(define (set-amps vols p)
+  (struct-copy
+    player
+    p
+    [func (lambda (b)
+            (define l-note ((player-func p) b))
+            (define vol (beat-lookup vols (player-beats p) b))
+            (if (and l-note vol)
+              (add-effect (mk-amp-effect vol) l-note)
+              l-note))]))
+
+; SoundEffect Note -> Note
+; Adds the soundeffect to the note
+(module+ test
+  (check-equal? (note->rs (add-effect rs-reverb a-bassdrum))
+                (note->rs b-bassdrum)))
+(define (add-effect se a-note)
+  (struct-copy note a-note
+               [effects (cons se (note-effects a-note))]))
+
+;; Defining Sound Effects
+
+; Number -> SoundEffect
+; Creates a SoundEffect that sets amplitude
+; a should be between 0 and 1
+(define (mk-amp-effect a)
+  (lambda (rs)
+    (rs-scale a rs)))
+
+; Rsound -> Rsound
+; Adds reverb to the actual rsound.
+(define (rs-reverb rs)
+  (signal->rsound
+    beat-length
+    (network ()
+             [a <= (rsound->signal/left rs)]
+             [out <= reverb a])))
+
 #;
-(play-song (list (loop 4 (player-from-instrument s-hihat '(1 2 3 4)))
+(play-song (list (loop 4 (set-amps '(1 1 1 .3) (player-from-instrument s-hihat '(1 2 3 4))))
                  (loop 4 (player-from-instrument s-snare '(1 2)))
                  (loop 4 (player-from-instrument s-bassdrum '(1 2)))))
 
 #;
-(play-song (list (set-pitch (make-key 'major 60) '(1 2 3 4 5 6 7 8) (player-from-instrument synth '(1 2 3 4 5 6 7 8)))
-                 (set-pitch (make-key 'major 60) '(8 7 6 5 4 3 2 1) (player-from-instrument synth '(1 2 3 4 5 6 7 8)))))
+(play-song (list (set-pitches (make-key 'major 60) '(1 2 3 4 5 6 7 8) (player-from-instrument synth '(1 2 3 4 5 6 7 8)))
+                 (set-pitches (make-key 'major 60) '(8 7 6 5 4 3 2 1) (player-from-instrument synth '(1 2 3 4 5 6 7 8)))))
+
