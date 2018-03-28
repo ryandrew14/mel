@@ -28,6 +28,9 @@
 (define basic-synth
   (pitch '(1 5) (player synth '(2 4))))
 
+;; Play basic-synth
+(play basic-synth)
+
 ```
 ```
    Program      = (tempo N) top-expr ...
@@ -40,18 +43,17 @@
 				| player-expr
                 | id
 
-  player-expr   = (player sound (list N ...))
+  player-expr   = (player instrument (list N ...))
 				| (pitch (list N ...) player-expr)
+				| (amp (list N ...) player-expr)
 				| (loop N player-expr)
-				| (amp N player-expr)
 				| (reverb player-expr)
 				| id 
 
-    sound       = hihat
+  instrument    = hihat
                 | kick
                 | snare
                 | bassdrum
                 | crash
-
-	synth		= synth 
+				| synth
 ```
