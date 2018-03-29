@@ -13,6 +13,8 @@ as well as the musical instrument with which to play the sounds.
 @section{Program Structure}
 
 Mel programs begin with a tempo statement, followed by a series of define or play statements.
+Mel programs run forever, no matter if there are play statements or not, and must be stopped
+by the user.
 
 @subsection{A Sample Program}
 
@@ -25,8 +27,7 @@ Mel programs begin with a tempo statement, followed by a series of define or pla
  (define seqB '(1 2))
 
  (define loop1
- (loop 4
-       (player hihat seqB)))
+ (loop 4 (player hihat seqB)))
 
  (play loop1)
 
@@ -58,7 +59,7 @@ Mel programs begin with a tempo statement, followed by a series of define or pla
    (player instrument (list N ...))
    (pitch Key-name (list N ...) player-expr)
    (loop N player-expr)
-   (reverb N player-expr)
+   (reverb player-expr)
    id]
 
   [instrument
@@ -67,50 +68,66 @@ Mel programs begin with a tempo statement, followed by a series of define or pla
    snare
    kick
    crash
-   synth]
+   synth])
+@section{Top-Level Expressions}
 
-  )
+@defform[(tempo n)
+         #:contracts([n nat?])]{
 
-@; Application
-@defform[(p arg f1 ...)
-         #:contracts([arg s-exp?][f1 procedure?])]{
-
- Applies the functions @racket[f1 ...] to @racket[arg] in left-to-right order.
- @(racketblock (p (a b (c d)) f1 f2)) is equivalent to
- @(racketblock ((compose f2 f1) a b (list c d)))
+ Sets the tempo, in bpm, of the song to be played by the file.
+ A tempo statement must be the first top-level form in a Mel file.
 }
 
-@; Lambda of a single s-Expression
-@defform[(-> arg body)
-         #:contracts([arg (or s-exp? id?)][body expression?])]{
- Takes a single shaped argument @racket[arg] (that is, an s-expression) and a @racket[body]
- expression and returns a procedure whose @racket[body] expression can use any identifiers
- bound in @racket[arg]. @racket[arg] may be an @racket[id] or it may be a shaped argument.
- If @racket[arg] is an @racket[id], @racket[->] will receive a list of the arguments it was
- called with (like @racket[(λ arg body ...)]). Should produce a list or an atom, and an atom
- is equivalent to a list of length 1. This is done because Pipelines functions 
- take their arguments and return their results as lists. 
+@defform[(define x body)
+         #:contracts([x id?][body expr?])]{
+ Works just like racket's @racket[(define x body)]. Can only define expressions available
+ in Mel - player-exprs, natural numbers, lists of natural numbers, and ids.
 }
 
-@; How do functions work?
-@section{Functions using Pipelines}
+@defform[(play p)
+         #:contracts([p player-expr?])]{
+ Plays the sound created by @racket[p].
+}
 
-@subsection{Shaped Arguments}
-While Racket functions take a series of arguments (conceptually similar to a list), Pipelines
-functions take their arguments in arbitrary "shapes" (similar to S-expressions). This means
-that if a value is passed to a function that expects an argument of a different shape,
-the function will return an error.
+@section{Player Expressions}
 
-@; How about calling Pipelines functions?
-@subsection{Calling Pipelines Functions}
-Pipelines functions can be applied in two ways. When inside a @racket[||] form, Pipelines functions
-can be called using @racket[[p arg f1]] as documented above OR as Racket functions using
-@racket[{f1 arg}]. When outside of a @racket[||] form, Pipelines functions can be called in either
-way using normal parentheses.
+Mel comes with @racket[player-expression]s, expressions that all consist of either just the
+player function or a series of effect functions wrapped around a player function.
+@racket[Player-expression]s provide the mechanism for creating sounds in Mel.
 
-@; Style and stuff
-@section{A Note on Style}
-We choose to write @racket[[p arg f1 ...]] with brackets rather than parentheses in order to
-keep visual
-consistency so that a pipeline of functions is always surrounded by square brackets and is easily
-identifiable as such.
+@defform[(player i beats)
+         #:contracts([i instrument?] [beats (list/c nat?)])]{
+ The player function constructs a basic sound series, playing the given instrument sound
+ on the beats specified by the second argument.
+}
+
+@subsection{Effect Functions}
+Mel provides a few different functions to add audio effects to a player-expression. These
+functions are player-expressions themselves and always take another player-expression
+as their final argument.
+
+@defform[(pitch Key-name pitches p)
+         #:contracts([pitches (list/c nat?)] [p player-expr?])]{
+ Takes the name of a key, list of pitches (which must be the same length as the list of beats
+ in p), and a @racket[player-expression]. This function adds the given pitches to the corresponding
+ beats of the given @racket[player-expression] p, where the numbers in the pitches list are the
+ degrees of the desired notes in the given key.
+
+ Does not pitch drum sounds.
+
+ Key-name can be any basic major or minor key name, formatted as such: [Note-letter][key-type], where
+ key-type is either maj or min. So, C major is Cmaj. All flat keys are represented by their
+ corresponding sharp key. So, E-flat minor is D#min. There is a final key, called midi, which allows
+ the user to input midi note numbers (e.g. 60 for middle C).
+}
+
+@defform[(loop n p)
+         #:contracts([n nat?][p player-expr?])]{
+ Takes a natural number meaning the amount of beats to loop and a @racket[player-expression]
+ and loops that player-expression.
+}
+
+@defform[(reverb p)
+         #:contracts([p player-expr?])]{
+ Adds a reverb sound effect to a player-expression.                                        
+}                                                         
