@@ -22,7 +22,7 @@
 
     ; N Player -> Player
     ; Loops a player using the specified loop length.
-    [loop (-> integer? player? player?)]
+    [set-loop (-> integer? player? player?)]
     
     ; Key [Listof Pitch] Player -> Player
     ; Sets the pitches of the player.
@@ -234,12 +234,12 @@
 ; N Player -> Player
 ; Loops a player using the specified loop length.
 (module+ test
-  (define simple (loop 4 p))
+  (define simple (set-loop 4 p))
   (check-equal? (note->rs ((player-func simple) 1)) (s-bassdrum 0))
   (check-equal? ((player-func simple) 2) #f)
   (check-equal? (note->rs ((player-func simple) 53)) (s-bassdrum 0))
   (check-equal? ((player-func simple) 24) #f))
-(define (loop loop-len p)
+(define (set-loop loop-len p)
   (struct-copy 
     player 
     p
@@ -409,9 +409,9 @@
              [out <= reverb a])))
 
 #;
-(play-song (list (loop 4 (set-amps '(1 1 1 .3) (player-from-instrument s-hihat '(1 2 3 4))))
-                 (loop 4 (player-from-instrument s-snare '(1 2)))
-                 (loop 4 (player-from-instrument s-bassdrum '(1 2)))))
+(play-song (list (set-loop 4 (set-amps '(1 1 1 .3) (player-from-instrument s-hihat '(1 2 3 4))))
+                 (set-loop 4 (player-from-instrument s-snare '(1 2)))
+                 (set-loop 4 (player-from-instrument s-bassdrum '(1 2)))))
 
 #;
 (play-song (list (set-pitches (make-key 'major 60) '(1 2 3 4 5 6 7 8) (player-from-instrument synth '(1 2 3 4 5 6 7 8)))

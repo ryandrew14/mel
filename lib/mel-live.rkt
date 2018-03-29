@@ -6,10 +6,10 @@
 ;;
 ;;    expr        = N
 ;;                | (list N ...)
-;;                | loop-expr
+;;                | player-expr
 ;;                | id
 ;;
-;;  loop-expr     = (loop N sound-expr ...)
+;;  player-expr     = (player N sound-expr ...)
 ;;
 ;; sound-expr     = [sound (list N ...)]
 ;;
@@ -24,23 +24,27 @@
 ;; add error messages to #%datum
 
 (require (for-syntax syntax/parse)
-         
-	 "mel-live-lib.rkt")
+
+         "mel-live-lib.rkt")
 
 (provide
- ; Override module begin
- (rename-out [mel-module-begin #%module-begin]
-             [mel-datum #%datum]
-             [mel-quote quote])
+  ; Override module begin
+  (rename-out [mel-module-begin #%module-begin]
+              [mel-datum #%datum]
+              [mel-quote quote]
+              [player-from-instrument player]
+              [set-loop loop]
+              [set-pitches pitch]
+              [set-reverb reverb])
 
- ; Racket basics
- define require 
+  ; Racket basics
+  define require #%app
 
- ; Macros
- play loop
+  ; Macros
+  play 
 
- ; Library things
- bassdrum hihat kick)
+  ; Library things
+  bassdrum hihat kick snare crash synth)
 
 ;; The song
 (define cursong '())
@@ -59,23 +63,15 @@
 ;; EFFECT plays this sound at a given time
 (define-syntax (play stx)
   (if (equal? (syntax-local-context) 'module)
-  (syntax-parse stx
-    [(_ n:nat)
-     (error "invalid syntax - play must take a loop-expression")]
-    [(_ (list l:nat ...))
-     (error "invalid syntax - play must take a loop-expression")]
-    [(_ loop-expr)
-     #:with fin-loop #'loop-expr
-     #'(update-song fin-loop)])
-  #'(error "Play is a top leve form!")))
-
-;; Syntax -> [N -> [Listof Sound]]
-;; given a loop-expr, uses the library function make-loop to format the information
-;; so that it can be used by the library function play-song
-(define-syntax loop
-  (syntax-parser
-    [(_ n:nat [sound-name lon] ...)
-     #'(make-loop n (list sound-name lon) ...)]))
+    (syntax-parse stx
+      [(_ n:nat)
+       (error "invalid syntax - play must take a player-expression")]
+      [(_ (list l:nat ...))
+       (error "invalid syntax - play must take a player-expression")]
+      [(_ player-expr)
+       #:with fin-player #'player-expr
+       #'(update-song fin-player)])
+    #'(error "Play is a top level form!")))
 
 ;; Restrict available datatypes to numbers, lists of numbers, and identifiers
 (define-syntax mel-datum
@@ -95,7 +91,7 @@
 
 
 ;; Runtime helper to create the song
-(define (update-song loop)
-  (set! cursong (cons loop cursong)))
+(define (update-song player)
+  (set! cursong (cons player cursong)))
 
 
