@@ -18,15 +18,15 @@
 
     ; Instrument [Listof N] -> Player
     ; Creates a player object given an instrument and when to play the instrument.
-    [player-from-instrument (-> instrument? (listof integer?) player?)]
+    [player-from-instrument (-> instrument? (listof nonnegative-integer?) player?)]
 
     ; N Player -> Player
     ; Loops a player using the specified loop length.
-    [set-loop (-> integer? player? player?)]
+    [set-loop (-> nonnegative-integer? player? player?)]
     
     ; Key [Listof Pitch] Player -> Player
     ; Sets the pitches of the player.
-    [set-pitches (-> (listof integer?) (listof integer?) player? player?)]
+    [set-pitches (-> (listof nonnegative-integer?) (listof integer?) player? player?)]
 
     ; Player -> Player
     ; Sets reverb to the player.
@@ -227,7 +227,7 @@
    (lambda (beat)
      (define should-play (member beat play-times))
      (if should-play
-         (note instrument 0 '())
+         (note instrument 60 '())
          #f))
    play-times))
 
@@ -263,28 +263,25 @@
 ; Key [Listof Pitch] Player -> Player
 ; Sets the pitches of the player
 (define (set-pitches key pitches p)
-  (cond
-    [(empty? key)
-     (player
-      (lambda (b)
-        (define l-note ((player-func p) b))
-        (if l-note
-            (note (note-instrument l-note)
-                  (beat-lookup pitches (player-beats p) b)
-                  (note-effects l-note))
-            #f))
-      (player-beats p))]
-    [else
-     (define pitches-in-key (map (λ (x) (pitch-in-key key x)) pitches))
-     (player
-      (lambda (b)
-        (define l-note ((player-func p) b))
-        (if l-note
-            (note (note-instrument l-note)
-                  (beat-lookup pitches-in-key (player-beats p) b)
-                  (note-effects l-note))
-            #f))
-      (player-beats p))]))
+  (if (= (length pitches) (length (player-beats p)))
+    (let ([keyed-pitches (map (λ (x) (pitch-in-key key x)) pitches)])
+      (struct-copy 
+        player 
+        p
+        [func (lambda (b)
+                (define l-note ((player-func p) b))
+                (define l-pitch (beat-lookup keyed-pitches (player-beats p) b))
+                (if (and l-note l-pitch)
+                  (struct-copy 
+                    note 
+                    l-note
+                    [pitch l-pitch])
+                  l-note))]))
+    (raise-arguments-error 
+      'set-pitches 
+      "List of pitches must be same length as player's beats" 
+      "pitches" pitches
+      "p" p)))
 
 ; Key Pitch -> Pitch
 ; given a relative pitch to a key, returns the proper midi note
@@ -298,9 +295,9 @@
   (cond
     [(empty? key) p]
     [else
-     (cond
-    [(< p-adjusted 7) (list-ref key p-adjusted)]
-    [(>= p-adjusted 7) (+ 12 (pitch-in-key key (- p 7)))])]))
+      (cond
+        [(< p-adjusted 7) (list-ref key p-adjusted)]
+        [(>= p-adjusted 7) (+ 12 (pitch-in-key key (- p 7)))])]))
 
 ; Symbol Pitch -> Key
 ; Makes a key, given the midi note to start on
