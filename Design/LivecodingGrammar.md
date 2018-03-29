@@ -44,16 +44,15 @@
                 | id
 
   player-expr   = (player instrument (list N ...))
-				| (pitch (list N ...) player-expr)
-				| (amp (list N ...) player-expr)
+				| (pitch Key-name (list N ...) player-expr)
 				| (loop N player-expr)
 				| (reverb player-expr)
 				| id 
 
   instrument    = hihat
-                | kick
-                | snare
                 | bassdrum
+                | snare
+                | kick
                 | crash
 				| synth
 ```

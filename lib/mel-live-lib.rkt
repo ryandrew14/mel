@@ -8,44 +8,48 @@
 
 (provide
   (contract-out
-    ; Update the tempo and beat length
-    ; EFFECT sets the tempo and beat length.
-    [update-tempo (-> integer? void?)]
+	; Update the tempo and beat length
+	; EFFECT sets the tempo and beat length.
+	[update-tempo (-> integer? void?)]
 
-    ; play-song runs indefinitely, playing the specified song.
-    ; EFFECT plays notes FOREVER
-    [play-song (-> song? void?)]
+	; play-song runs indefinitely, playing the specified song.
+	; EFFECT plays notes FOREVER
+	[play-song (-> song? void?)]
 
-    ; Instrument [Listof N] -> Player
-    ; Creates a player object given an instrument and when to play the instrument.
-    [player-from-instrument (-> instrument? (listof integer?) player?)]
+	; Instrument [Listof N] -> Player
+	; Creates a player object given an instrument and when to play the instrument.
+	[player-from-instrument (-> instrument? (listof integer?) player?)]
 
-    ; N Player -> Player
-    ; Loops a player using the specified loop length.
-    [set-loop (-> integer? player? player?)]
-    
-    ; Key [Listof Pitch] Player -> Player
-    ; Sets the pitches of the player.
-    [set-pitches (-> (listof integer?) (listof integer?) player? player?)]
+	; N Player -> Player
+	; Loops a player using the specified loop length.
+	[set-loop (-> integer? player? player?)]
 
-    ; Player -> Player
-    ; Sets reverb to the player.
-    [set-reverb (-> player? player?)]
+	; Key [Listof Pitch] Player -> Player
+	; Sets the pitches of the player.
+	[set-pitches (-> (listof integer?) (listof integer?) player? player?)]
 
-    ; Number Player -> Player
-    ; Sets the amplitude of the player.
-    [set-amp (-> number? player? player?)]
+	; Player -> Player
+	; Sets reverb to the player.
+	[set-reverb (-> player? player?)]
 
-    ; [Listof Number] Player -> Player
-    ; Sets the amplitude of each note of the player 
-    [set-amps (-> (listof number?) player? player?)])
+	; Number Player -> Player
+	; Sets the amplitude of the player.
+	[set-amp (-> number? player? player?)]
+
+	; [Listof Number] Player -> Player
+	; Sets the amplitude of each note of the player 
+	[set-amps (-> (listof number?) player? player?)])
+
+  ; Keys
+  Cmaj C#maj Dmaj D#maj Emaj Fmaj F#maj Gmaj G#maj Amaj A#maj Bmaj 
+  Cmin C#min Dmin D#min Emin Fmin F#min Gmin G#min Amin A#min Bmin 
 
   (rename-out
-    [s-kick kick]
-    [s-snare snare]
-    [s-bassdrum bassdrum]
-    [s-crash crash]
-    [s-hihat hihat])
+	[s-kick kick]
+	[s-snare snare]
+	[s-bassdrum bassdrum]
+	[s-crash crash]
+	[s-hihat hihat])
   synth)
 
 ; Data Definitions
@@ -89,7 +93,7 @@
 (define (rs->instrument rs)
   (define s-rs (rs-scale .3 rs))
   (lambda (p)
-    s-rs))
+	s-rs))
 
 (define s-bassdrum (rs->instrument bassdrum))
 (define s-kick (rs->instrument kick))
@@ -99,7 +103,7 @@
 
 (define synth 
   (lambda (p)
-    (synth-note "main" 1 p beat-length)))
+	(synth-note "main" 1 p beat-length)))
 
 (define tempo 100)
 
@@ -131,9 +135,9 @@
   (define a-bassdrum (note s-bassdrum 1 (list identity)))
   (define b-bassdrum (note s-bassdrum 1 (list rs-reverb)))
   (check-equal? (note->rs a-bassdrum)
-                (s-bassdrum 1))
+				(s-bassdrum 1))
   (check-equal? (note->rs b-bassdrum)
-                (rs-reverb (s-bassdrum 1))))
+				(rs-reverb (s-bassdrum 1))))
 (define (note->rs s)
   ((apply compose (note-effects s))
    ((note-instrument s) (note-pitch s))))
@@ -144,17 +148,17 @@
 ; The pstream plays upon creation, so it is impossible to hear notes at beat 0.
 (define (play-at-beat snd beat-num)
   (if (positive? beat-num)
-      (begin
-        (pstream-queue stream (note->rs snd) (beat->frame beat-num))
-        (void))
-      (error "Cannot play notes at beat-num 0"))) 
+	(begin
+	  (pstream-queue stream (note->rs snd) (beat->frame beat-num))
+	  (void))
+	(error "Cannot play notes at beat-num 0"))) 
 
 ; Player N -> (void)
 ; Queues the notes of a loop at a specified beat number onto the stream.
 (define (play-player-at-beat p beat-num)
   (if ((player-func p) beat-num)
-      (play-at-beat ((player-func p) beat-num) beat-num)
-      (void)))
+	(play-at-beat ((player-func p) beat-num) beat-num)
+	(void)))
 
 ; N -> N
 ; Calculate the beat that the specified frame belongs to.
@@ -162,7 +166,7 @@
 ; There should NOT be anything playing at beat 0!
 (module+ test
   (check-equal? (frame->beat 100)
-                (floor (/ 100 beat-length))))
+				(floor (/ 100 beat-length))))
 (define (frame->beat frame)
   (floor (/ frame beat-length)))
 
@@ -170,9 +174,9 @@
 ; Calculate the first frame of the specified beat.
 (module+ test
   (check-equal? (beat->frame 1)
-                (round beat-length))
+				(round beat-length))
   (check-equal? (beat->frame 2)
-                (round (* 2 beat-length))))
+				(round (* 2 beat-length))))
 (define (beat->frame beat)
   (round (* beat beat-length)))
 
@@ -196,7 +200,7 @@
 ; Queues all notes in a song for a given beat.
 (define (play-song-at-beat song beat)
   (for ([player song])
-    (play-player-at-beat player beat)))
+	(play-player-at-beat player beat)))
 
 ; Song -> (void)
 ; play-song runs indefinitely, playing the specified song.
@@ -204,13 +208,13 @@
 (define (play-song song)
   (set! stream (make-pstream))
   (for ([i (in-range 1 (add1 QUEUE-AHEAD))])
-    (play-song-at-beat song i))
+	(play-song-at-beat song i))
   (let loop ([last-queued QUEUE-AHEAD])
-    (define queue-to (+ (current-beat) QUEUE-SIZE QUEUE-AHEAD))
-    (for ([i (in-range (+ 1 last-queued) (+ 1 queue-to))])
-      (play-song-at-beat song i))
-    (sleep (/ (- (beat->frame (+ QUEUE-SIZE (current-beat))) (pstream-current-frame stream)) (default-sample-rate)))
-    (loop queue-to)))
+	(define queue-to (+ (current-beat) QUEUE-SIZE QUEUE-AHEAD))
+	(for ([i (in-range (+ 1 last-queued) (+ 1 queue-to))])
+	  (play-song-at-beat song i))
+	(sleep (/ (- (beat->frame (+ QUEUE-SIZE (current-beat))) (pstream-current-frame stream)) (default-sample-rate)))
+	(loop queue-to)))
 
 ;; Define provided player constructor and modifiers
 
@@ -224,12 +228,12 @@
   (check-equal? ((player-func p) 8) #f))
 (define (player-from-instrument instrument play-times)
   (player
-   (lambda (beat)
-     (define should-play (member beat play-times))
-     (if should-play
-         (note instrument 0 '())
-         #f))
-   play-times))
+	(lambda (beat)
+	  (define should-play (member beat play-times))
+	  (if should-play
+		(note instrument 0 '())
+		#f))
+	play-times))
 
 ; N Player -> Player
 ; Loops a player using the specified loop length.
@@ -241,11 +245,11 @@
   (check-equal? ((player-func simple) 24) #f))
 (define (set-loop loop-len p)
   (struct-copy 
-    player 
-    p
-    [func (lambda (n)
-            (define mod-beat (add1 (modulo (sub1 n) loop-len)))
-            ((player-func p) mod-beat))]))
+	player 
+	p
+	[func (lambda (n)
+			(define mod-beat (add1 (modulo (sub1 n) loop-len)))
+			((player-func p) mod-beat))]))
 
 ; [Listof X] [Listof Beat] Beat -> [Maybe X]
 ; Returns the X in the list of X corresponding to the given Beat in the list of Beats.
@@ -256,35 +260,35 @@
   (check-equal? (beat-lookup '(5 6 7) '(1 3 5) 6) #f))
 (define (beat-lookup lox lob b)
   (cond
-    [(or (empty? lox)(empty? lob)) #f]
-    [(= (first lob) b) (first lox)]
-    [else (beat-lookup (rest lox) (rest lob) b)]))
+	[(or (empty? lox)(empty? lob)) #f]
+	[(= (first lob) b) (first lox)]
+	[else (beat-lookup (rest lox) (rest lob) b)]))
 
 ; Key [Listof Pitch] Player -> Player
 ; Sets the pitches of the player
 (define (set-pitches key pitches p)
   (cond
-    [(empty? key)
-     (player
-      (lambda (b)
-        (define l-note ((player-func p) b))
-        (if l-note
-            (note (note-instrument l-note)
-                  (beat-lookup pitches (player-beats p) b)
-                  (note-effects l-note))
-            #f))
-      (player-beats p))]
-    [else
-     (define pitches-in-key (map (λ (x) (pitch-in-key key x)) pitches))
-     (player
-      (lambda (b)
-        (define l-note ((player-func p) b))
-        (if l-note
-            (note (note-instrument l-note)
-                  (beat-lookup pitches-in-key (player-beats p) b)
-                  (note-effects l-note))
-            #f))
-      (player-beats p))]))
+	[(empty? key)
+	 (player
+	   (lambda (b)
+		 (define l-note ((player-func p) b))
+		 (if l-note
+		   (note (note-instrument l-note)
+				 (beat-lookup pitches (player-beats p) b)
+				 (note-effects l-note))
+		   #f))
+	   (player-beats p))]
+	[else
+	  (define pitches-in-key (map (λ (x) (pitch-in-key key x)) pitches))
+	  (player
+		(lambda (b)
+		  (define l-note ((player-func p) b))
+		  (if l-note
+			(note (note-instrument l-note)
+				  (beat-lookup pitches-in-key (player-beats p) b)
+				  (note-effects l-note))
+			#f))
+		(player-beats p))]))
 
 ; Key Pitch -> Pitch
 ; given a relative pitch to a key, returns the proper midi note
@@ -296,11 +300,11 @@
 (define (pitch-in-key key p)
   (define p-adjusted (- p 1))
   (cond
-    [(empty? key) p]
-    [else
-     (cond
-    [(< p-adjusted 7) (list-ref key p-adjusted)]
-    [(>= p-adjusted 7) (+ 12 (pitch-in-key key (- p 7)))])]))
+	[(empty? key) p]
+	[else
+	  (cond
+		[(< p-adjusted 7) (list-ref key p-adjusted)]
+		[(>= p-adjusted 7) (+ 12 (pitch-in-key key (- p 7)))])]))
 
 ; Symbol Pitch -> Key
 ; Makes a key, given the midi note to start on
@@ -311,10 +315,10 @@
 (define (make-key key-type n)
   (define add-n (lambda (x) (+ n x)))
   (cond
-    [(symbol=? key-type 'major)
-     (map add-n '(0 2 4 5 7 9 11))]
-    [(symbol=? key-type 'minor)
-     (map add-n '(0 2 3 5 7 8 10))]))
+	[(symbol=? key-type 'major)
+	 (map add-n '(0 2 4 5 7 9 11))]
+	[(symbol=? key-type 'minor)
+	 (map add-n '(0 2 3 5 7 8 10))]))
 
 ; Predefined Keys
 (define Cmaj (make-key 'major 60))
@@ -346,49 +350,49 @@
 ; Adds reverb to the player.
 (define (set-reverb p)
   (struct-copy 
-    player 
-    p
-    [func (lambda (b)
-            (define l-note ((player-func p) b))
-            (if l-note
-              (add-effect rs-reverb l-note)
-              l-note))]))
+	player 
+	p
+	[func (lambda (b)
+			(define l-note ((player-func p) b))
+			(if l-note
+			  (add-effect rs-reverb l-note)
+			  l-note))]))
 
 ; Number Player -> Player
 ; Sets the amplitude of the player 
 ; Vol should be between 0 and 1.
 (define (set-amp vol p)
   (struct-copy
-    player
-    p
-    [func (lambda (b)
-            (define l-note ((player-func p) b))
-            (if l-note
-              (add-effect (mk-amp-effect vol) l-note)
-              l-note))]))
+	player
+	p
+	[func (lambda (b)
+			(define l-note ((player-func p) b))
+			(if l-note
+			  (add-effect (mk-amp-effect vol) l-note)
+			  l-note))]))
 
 ; [Listof Number] Player -> Player
 ; Sets the amplitude of each note of the player 
 ; Vol should be between 0 and 1.
 (define (set-amps vols p)
   (struct-copy
-    player
-    p
-    [func (lambda (b)
-            (define l-note ((player-func p) b))
-            (define vol (beat-lookup vols (player-beats p) b))
-            (if (and l-note vol)
-              (add-effect (mk-amp-effect vol) l-note)
-              l-note))]))
+	player
+	p
+	[func (lambda (b)
+			(define l-note ((player-func p) b))
+			(define vol (beat-lookup vols (player-beats p) b))
+			(if (and l-note vol)
+			  (add-effect (mk-amp-effect vol) l-note)
+			  l-note))]))
 
 ; SoundEffect Note -> Note
 ; Adds the soundeffect to the note
 (module+ test
   (check-equal? (note->rs (add-effect rs-reverb a-bassdrum))
-                (note->rs b-bassdrum)))
+				(note->rs b-bassdrum)))
 (define (add-effect se a-note)
   (struct-copy note a-note
-               [effects (cons se (note-effects a-note))]))
+			   [effects (cons se (note-effects a-note))]))
 
 ;; Defining Sound Effects
 
@@ -397,23 +401,23 @@
 ; a should be between 0 and 1
 (define (mk-amp-effect a)
   (lambda (rs)
-    (rs-scale a rs)))
+	(rs-scale a rs)))
 
 ; Rsound -> Rsound
 ; Adds reverb to the actual rsound.
 (define (rs-reverb rs)
   (signal->rsound
-    beat-length
-    (network ()
-             [a <= (rsound->signal/left rs)]
-             [out <= reverb a])))
+	beat-length
+	(network ()
+			 [a <= (rsound->signal/left rs)]
+			 [out <= reverb a])))
 
 #;
 (play-song (list (set-loop 4 (set-amps '(1 1 1 .3) (player-from-instrument s-hihat '(1 2 3 4))))
-                 (set-loop 4 (player-from-instrument s-snare '(1 2)))
-                 (set-loop 4 (player-from-instrument s-bassdrum '(1 2)))))
+				 (set-loop 4 (player-from-instrument s-snare '(1 2)))
+				 (set-loop 4 (player-from-instrument s-bassdrum '(1 2)))))
 
 #;
 (play-song (list (set-pitches (make-key 'major 60) '(1 2 3 4 5 6 7 8) (player-from-instrument synth '(1 2 3 4 5 6 7 8)))
-                 (set-pitches (make-key 'major 60) '(8 7 6 5 4 3 2 1) (player-from-instrument synth '(1 2 3 4 5 6 7 8)))))
+				 (set-pitches (make-key 'major 60) '(8 7 6 5 4 3 2 1) (player-from-instrument synth '(1 2 3 4 5 6 7 8)))))
 
