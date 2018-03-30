@@ -1,4 +1,5 @@
 lib/compiled
+compiled/
 *.bak
 *~
 .DS_Store

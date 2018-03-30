@@ -4,17 +4,21 @@ Music Embedding Language for racket. #lang mel
 ### A basic use example
 ```
 #lang mel
-
+ 
 (tempo 80)
-
-(sequence a
-  [play kick #:repeat 8]
-  [play clap #:rate 2])
-
-(sequence b
-  [play hihat #:stretch 2])
-
-(song
-  [a from 0 to 20]
-  [b from 10 to 20])
+ 
+(define seqA '(1 2 3 4))
+(define seqB '(1 2))
+ 
+(define loop1
+(loop 4
+      (player hihat seqB)))
+ 
+(play loop1)
+ 
+(play (loop 4 (player hihat seqA)))
+ 
+(play (loop 4 (reverb (player snare seqB))))
+ 
+(play (loop 4 (pitch Cmaj '(1 2 3 5) (player synth '(1 2 3 4)))))
 ```

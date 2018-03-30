@@ -1,3 +1,5 @@
-### Scoping Rules
+# Livecoding Scoping Rules
 
-- (sequence a e) binds a for the rest of the program (not in e)
+(define id expr) defines id to be expr for the rest of the program.
+
+
