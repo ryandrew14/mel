@@ -8,40 +8,7 @@
 
 (provide
   (contract-out
-<<<<<<< HEAD
-    ; Update the tempo and beat length
-    ; EFFECT sets the tempo and beat length.
-    [update-tempo (-> integer? void?)]
-
-    ; play-song runs indefinitely, playing the specified song.
-    ; EFFECT plays notes FOREVER
-    [play-song (-> song? void?)]
-
-    ; Instrument [Listof N] -> Player
-    ; Creates a player object given an instrument and when to play the instrument.
-    [player-from-instrument (-> instrument? (listof nonnegative-integer?) player?)]
-
-    ; N Player -> Player
-    ; Loops a player using the specified loop length.
-    [set-loop (-> nonnegative-integer? player? player?)]
-    
-    ; Key [Listof Pitch] Player -> Player
-    ; Sets the pitches of the player.
-    [set-pitches (-> (listof nonnegative-integer?) (listof integer?) player? player?)]
-
-    ; Player -> Player
-    ; Sets reverb to the player.
-    [set-reverb (-> player? player?)]
-
-    ; Number Player -> Player
-    ; Sets the amplitude of the player.
-    [set-amp (-> number? player? player?)]
-
-    ; [Listof Number] Player -> Player
-    ; Sets the amplitude of each note of the player 
-    [set-amps (-> (listof number?) player? player?)])
-=======
-	; Update the tempo and beat length
+; Update the tempo and beat length
 	; EFFECT sets the tempo and beat length.
 	[update-tempo (-> integer? void?)]
 
@@ -76,7 +43,7 @@
   ; Keys
   Cmaj C#maj Dmaj D#maj Emaj Fmaj F#maj Gmaj G#maj Amaj A#maj Bmaj 
   Cmin C#min Dmin D#min Emin Fmin F#min Gmin G#min Amin A#min Bmin 
->>>>>>> 20757872fb4e466de74d5e20ad406d19c7cdaad6
+  midi
 
   (rename-out
 	[s-kick kick]
@@ -84,6 +51,7 @@
 	[s-bassdrum bassdrum]
 	[s-crash crash]
 	[s-hihat hihat])
+  synth2
   synth)
 
 ; Data Definitions
@@ -137,7 +105,11 @@
 
 (define synth 
   (lambda (p)
-	(synth-note "main" 1 p beat-length)))
+	(synth-note "main" 22 p (round beat-length))))
+
+(define synth2
+  (lambda (p)
+	(synth-note "main" 5 p (round beat-length))))
 
 (define tempo 100)
 
@@ -352,6 +324,7 @@
 	 (map add-n '(0 2 3 5 7 8 10))]))
 
 ; Predefined Keys
+(define midi '())
 (define Cmaj (make-key 'major 60))
 (define C#maj (make-key 'major 61))
 (define Dmaj (make-key 'major 62))
@@ -438,7 +411,7 @@
 ; Adds reverb to the actual rsound.
 (define (rs-reverb rs)
   (signal->rsound
-	beat-length
+	(round beat-length)
 	(network ()
 			 [a <= (rsound->signal/left rs)]
 			 [out <= reverb a])))

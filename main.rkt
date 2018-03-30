@@ -44,11 +44,12 @@
   play 
 
   ; Library things
-  bassdrum hihat kick snare crash synth
+  bassdrum hihat kick snare crash synth synth2
 
   ; Keys
   Cmaj C#maj Dmaj D#maj Emaj Fmaj F#maj Gmaj G#maj Amaj A#maj Bmaj 
-  Cmin C#min Dmin D#min Emin Fmin F#min Gmin G#min Amin A#min Bmin) 
+  Cmin C#min Dmin D#min Emin Fmin F#min Gmin G#min Amin A#min Bmin
+  midi) 
 
 ;; The song
 (define cursong '())

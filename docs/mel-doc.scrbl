@@ -68,7 +68,8 @@ by the user.
    snare
    kick
    crash
-   synth])
+   synth
+   synth2])
 @section{Top-Level Expressions}
 
 @defform[(tempo n)
