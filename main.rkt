@@ -64,14 +64,15 @@
   (syntax-parser
     [(_ ((~datum tempo) t)
         (~seq (~or ((~datum define) id expr)
-                   pexpr:player-expr) ...))
+                   pexpr:player-expr
+                   pid:id) ...))
      #:with defines #'(begin (define id expr) ...)
-     #:with plays #'(begin (play pexpr) ...)
+     #:with plays #'(begin (play pexpr) ... (play pid) ...)
      #'(#%module-begin
         (update-tempo t)
         defines
         plays
-        (play-song cursong))]))
+        (provide cursong tempo))]))
 
 ;; Syntax -> Void
 ;; EFFECT plays this sound at a given time
