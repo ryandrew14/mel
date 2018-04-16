@@ -36,16 +36,13 @@
  ; Racket basics
  define require #%app lambda
 
- ; Macros
- play 
-
  ; Library things
  bassdrum hihat kick snare crash synth synth2
 
  ; Keys
  Cmaj C#maj Dmaj D#maj Emaj Fmaj F#maj Gmaj G#maj Amaj A#maj Bmaj 
  Cmin C#min Dmin D#min Emin Fmin F#min Gmin G#min Amin A#min Bmin
- midi) 
+ midi)
 
 ;; The song
 (define cursong '())
@@ -57,7 +54,9 @@
     (pattern (player arg ...))
     (pattern (loop arg ...))
     (pattern (pitch arg ...))
-    (pattern (reverb arg ...))))
+    (pattern (reverb arg ...))
+    (pattern x:id
+             #:fail-unless #'(~player-expr x) "Incorrect type: expected player-expression")))
 
 ;; module-begin
 (define-syntax mel-module-begin
