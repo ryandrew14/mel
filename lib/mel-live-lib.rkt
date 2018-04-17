@@ -54,7 +54,10 @@
  synth2
  synth
 
- tempo)
+ tempo beat-length
+ play-song-at-beat
+ (struct-out note)
+ (struct-out player))
 
 ; Data Definitions
 
@@ -167,7 +170,7 @@
 ; Queues a note onto the stream to play at a certain beat number.
 ; Beat-num should NOT be 0! 
 ; The pstream plays upon creation, so it is impossible to hear notes at beat 0.
-(define (play-at-beat snd beat-num)
+(define (play-at-beat snd beat-num stream)
   (if (positive? beat-num)
       (begin
         (pstream-queue stream (note->rs snd) (beat->frame beat-num))
@@ -176,9 +179,9 @@
 
 ; Player N -> (void)
 ; Queues the notes of a loop at a specified beat number onto the stream.
-(define (play-player-at-beat p beat-num)
+(define (play-player-at-beat p beat-num stream)
   (if ((player-func p) beat-num)
-      (play-at-beat ((player-func p) beat-num) beat-num)
+      (play-at-beat ((player-func p) beat-num) beat-num stream)
       (void)))
 
 ; N -> N
@@ -219,9 +222,9 @@
 
 ; Song N -> (void)
 ; Queues all notes in a song for a given beat.
-(define (play-song-at-beat song beat)
+(define (play-song-at-beat song beat stream)
   (for ([player song])
-    (play-player-at-beat player beat)))
+    (play-player-at-beat player beat stream)))
 
 ; Song -> (void)
 ; play-song runs indefinitely, playing the specified song.
@@ -229,11 +232,11 @@
 (define (play-song song)
   (set! stream (make-pstream))
   (for ([i (in-range 1 (add1 QUEUE-AHEAD))])
-    (play-song-at-beat song i))
+    (play-song-at-beat song i stream))
   (let loop ([last-queued QUEUE-AHEAD])
     (define queue-to (+ (current-beat) QUEUE-SIZE QUEUE-AHEAD))
     (for ([i (in-range (+ 1 last-queued) (+ 1 queue-to))])
-      (play-song-at-beat song i))
+      (play-song-at-beat song i stream))
     (sleep (/ (- (beat->frame (+ QUEUE-SIZE (current-beat))) (pstream-current-frame stream))
               (default-sample-rate)))
     (loop queue-to)))

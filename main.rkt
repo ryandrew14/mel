@@ -20,7 +20,8 @@
 ;;                | crash
 
 (require (for-syntax syntax/parse)
-
+         reloadable
+         (only-in rsound make-pstream pstream-current-frame)
          "lib/mel-live-lib.rkt")
 
 (provide
@@ -69,10 +70,22 @@
      #:with defines #'(begin (define id expr) ...)
      #:with plays #'(begin (play pexpr) ... (play pid) ...)
      #'(#%module-begin
+        (provide tempo play-the-song current-beat)
         (update-tempo t)
         defines
         plays
-        (provide cursong tempo))]))
+        #;(play-song cursong))]))
+
+
+(define global-stream
+  (make-persistent-state 'global-stream (lambda ()(make-pstream))))
+
+(define (current-beat)
+  (round (/ (pstream-current-frame (global-stream)) beat-length)))
+
+
+(define (play-the-song beat)
+  (play-song-at-beat cursong beat (global-stream)))
 
 ;; Syntax -> Void
 ;; EFFECT plays this sound at a given time
